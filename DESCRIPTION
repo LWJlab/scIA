@@ -1,0 +1,19 @@
+Package: scIA
+Title: Single-cell intelligent annotation
+Version: 1.0
+Authors@R: 
+    person("Fanjie", "Lin", , "lfj@stu.gzhmu.edu.cn", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0001-6330-9759"))
+Description: Single-cell intelligent annotation-20251021
+License: GPL-3
+Encoding: UTF-8
+Language: es
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Depends: 
+    dplyr (>= 1.1.4),
+    matrixStats (>= 1.4.1),
+    Seurat (>= 4.4.0)
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
