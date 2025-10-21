@@ -14,6 +14,3 @@ Depends:
     dplyr (>= 1.1.4),
     matrixStats (>= 1.4.1),
     Seurat (>= 4.4.0)
-Suggests: 
-    testthat (>= 3.0.0)
-Config/testthat/edition: 3
