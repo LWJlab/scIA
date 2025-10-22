@@ -20,4 +20,5 @@ Imports:
     dplyr,
     Seurat,
     matrixStats,
-    utils
+    utils,
+    Matrix

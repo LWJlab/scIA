@@ -59,7 +59,7 @@
       expr_vals <- expr_matrix[valid_genes, , drop = FALSE]
       expr_vals[expr_vals < 0] <- 0
       
-      weighted_geo_mean <- exp(base::colSums(weights * log1p(expr_vals)) / sum(weights))
+      weighted_geo_mean <- exp(colSums(weights * log1p(expr_vals)) / sum(weights))
       prob_matrix[, i] <- weighted_geo_mean
     } else {
       prob_matrix[, i] <- 0
@@ -68,7 +68,7 @@
   
   # Softmax归一化
   prob_matrix <- exp(prob_matrix - matrixStats::rowMaxs(prob_matrix))
-  prob_matrix <- prob_matrix / base::rowSums(prob_matrix)
+  prob_matrix <- prob_matrix / Matrix::rowSums(prob_matrix)
   
   # 生成结果
   results <- data.frame(

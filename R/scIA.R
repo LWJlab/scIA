@@ -32,6 +32,7 @@
 #' }
 #' @importFrom Seurat GetAssayData
 #' @importFrom matrixStats rowMaxs
+#' @importFrom Matrix rowMeans rowSums
 #' @importFrom utils txtProgressBar setTxtProgressBar
 #' @export
 scIA <- function(object, 
@@ -142,7 +143,7 @@ scIA <- function(object,
     genes <- pan_genes[[i]]
     valid_genes <- intersect(genes, rownames(expr_matrix))
     if (length(valid_genes) > 0) {
-      pan_scores[, i] <- base::colMeans(expr_matrix[valid_genes, , drop = FALSE])
+      pan_scores[, i] <- Matrix::colMeans(expr_matrix[valid_genes, , drop = FALSE])
     }
   }
   utils::setTxtProgressBar(pb_total, 3)
