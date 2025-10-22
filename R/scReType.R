@@ -72,7 +72,7 @@ scReType_single <- function(object,
   result_df[[conf_colname]] <- 0
   
   # 确保标记基因在表达矩阵中存在
-  valid_markers <- intersect(markers, rownames(expr_matrix))
+  valid_markers <- intersect(gs, rownames(expr_matrix))
   if (length(valid_markers) == 0) {
     warning("None of the provided markers are found in the expression matrix")
     return(result_df)
