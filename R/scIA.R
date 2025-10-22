@@ -32,7 +32,7 @@
 #' }
 #' @importFrom Seurat GetAssayData
 #' @importFrom matrixStats rowMaxs
-#' @importFrom Matrix rowMeans rowSums
+#' @importFrom Matrix rowMeans rowSums colSums
 #' @importFrom utils txtProgressBar setTxtProgressBar
 #' @export
 scIA <- function(object, 
