@@ -13,7 +13,7 @@ scIA(
   ci_gs = NULL,
   wt_gs = NULL,
   pan_mapping = NULL,
-  include_gs = FALSE,
+  add_gs_exp = FALSE,
   use_pan = FALSE,
   use_cluster = TRUE,
   cluster_ids = NULL,
@@ -21,7 +21,7 @@ scIA(
 )
 }
 \arguments{
-\item{object}{Seurat object.}
+\item{object}{Seurat object}
 
 \item{org}{Organism}
 
@@ -29,15 +29,15 @@ scIA(
 
 \item{ex_types}{Cell types to be excluded}
 
-\item{gs}{List of gene markers}
+\item{gs}{List of marker genes}
 
-\item{ci_gs}{List of gene markers' confidence}
+\item{ci_gs}{List of marker genes' confidence}
 
-\item{wt_gs}{List of gene markers' weight}
+\item{wt_gs}{List of marker genes' weight}
 
 \item{pan_mapping}{Mapping cells to main cell types}
 
-\item{include_gs}{Whether to print the gene expression in the results}
+\item{add_gs_exp}{Whether to print the gene expression in the results}
 
 \item{use_pan}{Using pan-celltype mapping function}
 
@@ -61,7 +61,7 @@ gs = gs,
 ex_types = c('Goblet (bronchial)','SMG duct','SMG mucous','SMG serous (bronchial)'), 
 ci_gs = ci_gs,
 wt_gs = wt_gs,
-include_gs = FALSE,
+add_gs_exp = FALSE,
 pan_mapping = pan_celltype,
 use_pan = FALSE,
 use_cluster = TRUE,  
