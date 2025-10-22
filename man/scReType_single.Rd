@@ -2,10 +2,7 @@
 % Please edit documentation in R/scReType.R
 \name{scReType_single}
 \alias{scReType_single}
-\title{Single-cell re-identification analysis (single)
-This function performs single-cell re-identification by evaluating
-whether cells expressing a sufficient number of marker genes should
-be reclassified to a target cell type.}
+\title{Single-cell re-identification analysis (single)}
 \usage{
 scReType_single(
   object,
@@ -36,7 +33,6 @@ scReType_single(
 A dataframe containing the final results
 }
 \description{
-Single-cell re-identification analysis (single)
 This function performs single-cell re-identification by evaluating
 whether cells expressing a sufficient number of marker genes should
 be reclassified to a target cell type.
