@@ -59,7 +59,7 @@
       expr_vals <- expr_matrix[valid_genes, , drop = FALSE]
       expr_vals[expr_vals < 0] <- 0
       
-      weighted_geo_mean <- exp(colSums(weights * log1p(expr_vals)) / sum(weights))
+      weighted_geo_mean <- exp(Matrix::colSums(weights * log1p(expr_vals)) / sum(weights))
       prob_matrix[, i] <- weighted_geo_mean
     } else {
       prob_matrix[, i] <- 0
