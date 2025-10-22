@@ -16,6 +16,7 @@
 #' @param cluster_col The column name of cluster ids in metadata
 #' @return A dataframe containing the final results
 #' @examples
+#' \dontrun{
 #' scIA(sce, org = 'hsa', 
 #' cell_ids = cell_ids, 
 #' gs = gs, 
@@ -28,6 +29,10 @@
 #' use_cluster = TRUE,  
 #' cluster_ids = cluster_ids,   
 #' cluster_col = "seurat_clusters"
+#' }
+#' @importFrom Seurat GetAssayData
+#' @importFrom matrixStats rowMaxs
+#' @importFrom utils txtProgressBar setTxtProgressBar
 #' @export
 scIA <- function(object, 
                  org = c('hsa','mus','rat'),
@@ -43,126 +48,23 @@ scIA <- function(object,
                  cluster_ids = NULL,
                  cluster_col = "seurat_clusters") {
   
-  # 内部函数
-  .cal_prob <- function(expr_matrix, gs, wt_gs, 
-                        pan_scores) {
-    n_cells <- ncol(expr_matrix)
-    n_types <- length(gs)
-    cell_ids <- colnames(expr_matrix)
-    
-    # 初始化概率矩阵
-    prob_matrix <- matrix(1/n_types, nrow = n_cells, ncol = n_types,
-                          dimnames = list(cell_ids, names(gs)))
-    
-    # 处理marker权重
-    calculate_scientific_weights <- function(weight_levels) {
-      weight_values <- sapply(weight_levels, function(level) {
-        if (is.numeric(level)) return(level)
-        switch(tolower(level),
-               "high" = 1.0,
-               "medium" = 0.7,
-               "low" = 0.3,
-               1.0)
-      })
-      weight_values / mean(weight_values)
-    }
-    
-    # 创建权重矩阵 (仅使用gs中的基因)
-    all_marker_genes <- unique(unlist(gs))
-    weight_matrix <- matrix(0, nrow = n_types, ncol = length(all_marker_genes),
-                            dimnames = list(names(gs), all_marker_genes))
-    
-    # 步骤1: 初始化所有基础标记基因的权重为low (0.3)
-    for (type in names(gs)) {
-      weight_matrix[type, gs[[type]]] <- 0.3
-    }
-    
-    # 步骤2: 应用用户提供的权重 (覆盖默认值)
-    if (!is.null(wt_gs) && length(wt_gs) > 0) {
-      for (type in names(wt_gs)) {
-        if (type %in% names(gs)) {
-          weights <- wt_gs[[type]]
-          sci_weights <- calculate_scientific_weights(weights)
-          
-          # 仅处理存在于基础标记基因中的基因
-          valid_genes <- intersect(names(weights), gs[[type]])
-          if (length(valid_genes) > 0) {
-            weight_matrix[type, valid_genes] <- sci_weights[valid_genes]
-          }
-        }
-      }
-    }
-    
-    # 计算细胞类型概率
-    for (i in seq_len(n_types)) {
-      type <- names(gs)[i]
-      relevant_genes <- gs[[type]]
-      valid_genes <- intersect(relevant_genes, rownames(expr_matrix))
-      
-      if (length(valid_genes) > 0) {
-        weights <- weight_matrix[type, valid_genes]
-        expr_vals <- expr_matrix[valid_genes, , drop = FALSE]
-        expr_vals[expr_vals < 0] <- 0
-        
-        weighted_geo_mean <- exp(colSums(weights * log1p(expr_vals)) / sum(weights))
-        prob_matrix[, i] <- weighted_geo_mean
-      } else {
-        prob_matrix[, i] <- 0
-      }
-    }
-    
-    # Softmax归一化
-    prob_matrix <- exp(prob_matrix - matrixStats::rowMaxs(prob_matrix))
-    prob_matrix <- prob_matrix / rowSums(prob_matrix)
-    
-    # 生成结果
-    results <- data.frame(
-      cell_id = cell_ids,
-      predicted.label = colnames(prob_matrix)[max.col(prob_matrix)],
-      predicted.score = matrixStats::rowMaxs(prob_matrix),
-      stringsAsFactors = FALSE
-    )
-    
-    # 添加概率矩阵
-    results <- cbind(results, as.data.frame(prob_matrix))
-    
-    return(results)
+  # 步骤0: 检查参数缺失及冲突
+  if (!inherits(object, "Seurat")) {
+    stop("object must be a Seurat object")
   }
   
-  .extract_gs <- function(gs, wt_gs) {
-    marker_info <- list()
-    
-    for (celltype in names(gs)) {
-      # 获取基础标记基因
-      base_genes <- gs[[celltype]]
-      
-      # 如果有权重信息，获取加权基因
-      weighted_genes <- if (!is.null(wt_gs) && celltype %in% names(wt_gs)) {
-        names(wt_gs[[celltype]])
-      } else {
-        NULL
-      }
-      
-      # 确定最终使用的标记基因
-      if (!is.null(weighted_genes)) {
-        # 取基础基因和加权基因的交集
-        final_genes <- intersect(base_genes, weighted_genes)
-        if (length(final_genes) == 0) {
-          warning("No overlapping marker genes for celltype: ", celltype,
-                  ". Using all base markers.")
-          final_genes <- base_genes
-        }
-      } else {
-        final_genes <- base_genes
-      }
-      
-      marker_info[[celltype]] <- final_genes
-    }
-    
-    return(marker_info)
+  if (missing(cell_ids)) {
+    stop("cell_ids must be specified")
   }
   
-  # 步骤0: 检查参数冲突
+  if (!all(cell_ids %in% colnames(object))) {
+    stop("Some cell_ids not found in the Seurat object")
+  }
+  
+  if (use_pan && is.null(pan_mapping)) {
+    stop("pan_mapping must be provided when use_pan = TRUE")
+  }
+  
   if (use_pan && use_cluster) {
     stop("Cannot enable both use_pan and use_cluster simultaneously. ",
          "Please choose only one grouping method.")
@@ -170,8 +72,8 @@ scIA <- function(object,
   
   # 初始化总进度条
   message("Starting cell type assignment...")
-  pb_total <- txtProgressBar(min = 0, max = 6, style = 3, width = 50, char = "=")
-  setTxtProgressBar(pb_total, 0)
+  pb_total <- utils::txtProgressBar(min = 0, max = 6, style = 3, width = 50, char = "=")
+  utils::setTxtProgressBar(pb_total, 0)
   Sys.sleep(0.1)
   
   # 步骤2: 过滤排除的细胞类型
@@ -199,8 +101,8 @@ scIA <- function(object,
   }
   
   # 获取表达矩阵
-  expr_matrix <- GetAssayData(object, slot = "data")[, cell_ids, drop = FALSE]
-  setTxtProgressBar(pb_total, 2)
+  expr_matrix <- Seurat::GetAssayData(object, slot = "data")[, cell_ids, drop = FALSE]
+  utils::setTxtProgressBar(pb_total, 2)
   Sys.sleep(0.1)
   message("Retrieved expression matrix for ", length(cell_ids), " cells")
   
@@ -220,14 +122,15 @@ scIA <- function(object,
       Pan_immune = c("PTPRC", "CD53", "CORO1A"),
       Pan_stroma = c("COL1A2", "DCN", "MFAP4")
     )
-  } 
-  pan_genes <- if (org %in% c('mus','rat')) {
+  } else if (org %in% c('mus','rat')) {
     list(
       Pan_epithelial = c("Epcam", "Fxyd3", "Elf3"),
       Pan_endothelial = c("Cldn5", "Ecscr", "Clec14a"),
       Pan_immune = c("Ptprc", "Cd53", "Coro1a"),
       Pan_stroma = c("Col1a2", "Dcn", "Mfap4")
     )
+  } else {
+    stop("Unsupported organism: ", org)
   }
   
   # 计算pan-celltype分数
@@ -239,10 +142,10 @@ scIA <- function(object,
     genes <- pan_genes[[i]]
     valid_genes <- intersect(genes, rownames(expr_matrix))
     if (length(valid_genes) > 0) {
-      pan_scores[, i] <- colMeans(expr_matrix[valid_genes, , drop = FALSE])
+      pan_scores[, i] <- base::colMeans(expr_matrix[valid_genes, , drop = FALSE])
     }
   }
-  setTxtProgressBar(pb_total, 3)
+  utils::setTxtProgressBar(pb_total, 3)
   Sys.sleep(0.1)
   
   # 步骤4: 分组策略
@@ -269,7 +172,7 @@ scIA <- function(object,
     names(cluster_vec) <- cell_ids
     
     # 检查所有聚类是否都有定义
-    missing_clusters <- setdiff(unique(cluster_vec), names(cluster_ids))
+    missing_clusters <- base::setdiff(unique(cluster_vec), names(cluster_ids))
     if (length(missing_clusters) > 0) {
       stop("The following clusters are missing in cluster_ids: ", 
            paste(missing_clusters, collapse = ", "))
@@ -342,7 +245,7 @@ scIA <- function(object,
   
   # 存储所有分组结果
   results_list <- list()
-  setTxtProgressBar(pb_total, 4)
+  utils::setTxtProgressBar(pb_total, 4)
   Sys.sleep(0.1)
   
   # 步骤5: 对每个大类/混合类单独进行预测
@@ -411,7 +314,7 @@ scIA <- function(object,
     message("  Completed prediction for group: ", group)
   }
   
-  setTxtProgressBar(pb_total, 5)
+  utils::setTxtProgressBar(pb_total, 5)
   Sys.sleep(0.1)
   
   # 步骤6: 整合所有结果
@@ -477,7 +380,7 @@ scIA <- function(object,
     
     # 提取这些基因的表达矩阵（二值化：>0 表示表达）
     # 确保使用原始表达矩阵，并且细胞顺序与final_df一致
-    conf_expr <- GetAssayData(object, slot = "data")[intersect(all_conf_genes, rownames(object)), cell_ids, drop = FALSE] > 0
+    conf_expr <- Seurat::GetAssayData(object, slot = "data")[intersect(all_conf_genes, rownames(object)), cell_ids, drop = FALSE] > 0
     
     # 初始化置信度分数向量
     confidence_scores <- rep(0, length(cell_ids))
@@ -561,7 +464,7 @@ scIA <- function(object,
     all_marker_genes <- unique(unlist(marker_info))
     
     # 提取表达矩阵（确保使用相同的cell_ids顺序）
-    expr_matrix_full <- GetAssayData(object, slot = "data")[, cell_ids, drop = FALSE]
+    expr_matrix_full <- Seurat::GetAssayData(object, slot = "data")[, cell_ids, drop = FALSE]
     
     # 为每个细胞类型添加其标记基因
     for (celltype in names(marker_info)) {
@@ -585,7 +488,7 @@ scIA <- function(object,
     message("Added expression data for ", length(all_marker_genes), " marker genes")
   }
   
-  setTxtProgressBar(pb_total, 6)
+  utils::setTxtProgressBar(pb_total, 6)
   Sys.sleep(0.1)
   close(pb_total)
   

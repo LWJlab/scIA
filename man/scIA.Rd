@@ -7,7 +7,7 @@
 scIA(
   object,
   org = c("hsa", "mus", "rat"),
-  cell_ids = NULL,
+  cell_ids,
   ex_types = NULL,
   gs = NULL,
   ci_gs = NULL,
@@ -54,6 +54,7 @@ A dataframe containing the final results
 Single-cell intelligent annotation
 }
 \examples{
+\dontrun{
 scIA(sce, org = 'hsa', 
 cell_ids = cell_ids, 
 gs = gs, 
@@ -66,6 +67,7 @@ use_pan = FALSE,
 use_cluster = TRUE,  
 cluster_ids = cluster_ids,   
 cluster_col = "seurat_clusters"
+}
 }
 \author{
 Fanjie Lin, Yuanfang Xie, Weiguo Kong, Ken Lin

@@ -2,15 +2,22 @@ Package: scIA
 Title: Single-cell intelligent annotation
 Version: 1.0
 Authors@R: 
-    person("Fanjie", "Lin", , "lfj@stu.gzhmu.edu.cn", role = c("aut", "cre"),
-           comment = c(ORCID = "0000-0001-6330-9759"))
-Description: Single-cell intelligent annotation-20251021
+    c(person("Fanjie", "Lin", email = "lfj@stu.gzhmu.edu.cn", 
+             role = c("aut", "cre"),
+             comment = c(ORCID = "0000-0001-6330-9759")),
+      person("Yuanfang", "Xie", role = "aut"),
+      person("Weiguo", "Kong", role = "aut"),
+      person("Ken", "Lin", role = "aut"))
+Description: Provides intelligent cell type annotation for single-cell RNA sequencing data. 
+    The package uses marker gene expression, probabilistic scoring, and hierarchical 
+    grouping strategies to accurately assign cell types in Seurat objects.
 License: GPL-3
 Encoding: UTF-8
-Language: es
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
-Depends: 
-    dplyr (>= 1.1.4),
-    matrixStats (>= 1.4.1),
-    Seurat (>= 4.4.0)
+Depends: R (>= 4.1.0)
+Imports:
+    dplyr,
+    Seurat,
+    matrixStats,
+    utils
